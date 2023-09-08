@@ -114,13 +114,13 @@
     <None Include="..\..\Config\DefaultGame.ini" />
     <None Include="..\..\Config\DefaultInput.ini" />
     <None Include="..\..\Source\UE5PlanetGen\UE5PlanetGen.Build.cs" />
-    <ClCompile Include="..\..\Source\TerrainGeneration\Quad.cpp" />
+    <ClCompile Include="..\..\Source\UE5PlanetGen\TerrainGeneration\Quad.cpp" />
     <ClCompile Include="..\..\Source\UE5PlanetGen\UE5PlanetGen.cpp">
       <AdditionalIncludeDirectories>$(ClCompile_AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>$(ClCompile_ForcedIncludeFiles)</ForcedIncludeFiles>
       <AdditionalOptions>$(ClCompile_AdditionalOptions)</AdditionalOptions>
     </ClCompile>
-    <ClInclude Include="..\..\Source\TerrainGeneration\Quad.h" />
+    <ClInclude Include="..\..\Source\UE5PlanetGen\TerrainGeneration\Quad.h" />
     <ClInclude Include="..\..\Source\UE5PlanetGen\UE5PlanetGen.h" />
   </ItemGroup>
   <PropertyGroup>

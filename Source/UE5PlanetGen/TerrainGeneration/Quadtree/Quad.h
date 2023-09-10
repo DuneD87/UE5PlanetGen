@@ -63,7 +63,9 @@ protected:
 			{0.0f, 0.0f, 1.0f}
 	};
 	UPROPERTY(EditAnywhere)
-	TArray<UMaterialInterface*> MaterialInterface;
+	UMaterialInterface* MaterialInterface;
+	UPROPERTY()
+	UMaterialInstanceDynamic* DynamicMaterial;
 	UPROPERTY(EditAnywhere)
 	TArray<FLinearColor> VertexColors
 	{

@@ -39,21 +39,26 @@ void AQuad::PostActorCreated()
 
 void AQuad::SetActiveQuad(bool Active)
 {
-	if (Active)
+	if (MaterialInterface != nullptr)
 	{
-		if (MaterialInterface.Num() > 0)
+		DynamicMaterial = UMaterialInstanceDynamic::Create(MaterialInterface, Quad);
+	}
+	if (DynamicMaterial)
+	{
+		if (Active)
 		{
-			Quad->SetMaterial(0,MaterialInterface[0]);
+			DynamicMaterial->SetVectorParameterValue("Color", FVector(255,0,0));
+			//MaterialInterface->SetVectorParameterValue("Base Color", FLinearColor::Red);
+			Quad->SetMaterial(0, DynamicMaterial);
+		}
+		else
+		{
+			DynamicMaterial->SetVectorParameterValue("Color", FVector(0,255,0));
+			//MaterialInterface->SetVectorParameterValue("Base Color", FLinearColor::Green);
+			Quad->SetMaterial(0, DynamicMaterial);
 		}
 	}
-	else
-	{
-		if (MaterialInterface.Num() > 1)
-		{
-			Quad->SetMaterial(0,MaterialInterface[1]);
-		}
-	}
-		
+	
 }
 
 void AQuad::BeginPlay()

@@ -46,14 +46,15 @@ void AQuadTree::Tick(float DeltaSeconds)
 	if (CurrCameraPosition != CameraPosition)
 	{
 		CameraPosition = CurrCameraPosition;
-		int MaxDistIndex {-1};
-		float MaxDist {0.0f};
+		int MaxDistIndex {};
+		float MaxDist {std::numeric_limits<float>::max()};
 		for (int i = 0; i < QuadRootNode->Nodes.Num(); i++)
 		{
 			const auto& ChildPos {QuadRootNode->Nodes[i]->Value->GetActorLocation()};
 			double Distance {FVector::Distance(ChildPos, CameraPosition)};
-			if (Distance > MaxDist)
+			if (Distance < MaxDist)
 			{
+				UE_LOG(LogTemp, Warning, TEXT("Distance from child %d is %f"),i, Distance);
 				MaxDist = Distance;
 				MaxDistIndex = i;
 			}
@@ -62,11 +63,12 @@ void AQuadTree::Tick(float DeltaSeconds)
 		{
 			if (i == MaxDistIndex)
 			{
+				UE_LOG(LogTemp, Warning, TEXT("Setting child active: %d"), MaxDistIndex);
 				QuadRootNode->Nodes[MaxDistIndex]->Value->SetActiveQuad(true);
 			}
 			else
 			{
-				QuadRootNode->Nodes[MaxDistIndex]->Value->SetActiveQuad(false);
+				QuadRootNode->Nodes[i]->Value->SetActiveQuad(false);
 			}
 		}
 	}
@@ -126,7 +128,7 @@ void AQuadTree::BuildQuadTree()
 		default:
 			break;
 		}
-		
+
 		NewQuad->Value = GetWorld()->SpawnActor<AQuad>(QuadClass, this->GetActorLocation() + Offset, this->GetActorRotation(), FActorSpawnParameters());
 		QuadRootNode->Nodes.Push(NewQuad);	
 	}

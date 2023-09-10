@@ -9,11 +9,11 @@ AQuad::AQuad()
 void AQuad::PostLoad()
 {
 	Super::PostLoad();
-	CreateQuad();
 }
 
 void AQuad::BeginDestroy()
 {
+	Quad->RemoveFromRoot();
 	Super::BeginDestroy();
 }
 
@@ -34,7 +34,6 @@ void AQuad::PostActorCreated()
 {
 	Super::PostActorCreated();
 	UE_LOG(LogTemp, Warning, TEXT("Quad Created"));
-	CreateQuad();
 }
 
 void AQuad::SetActiveQuad(bool Active)
@@ -66,9 +65,16 @@ void AQuad::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AQuad::CreateQuad() const
+void AQuad::CreateQuad(float InScale) 
 {
-
+	TArray<FVector> Vertices =
+	{
+		{-InScale, -InScale, 0.0f},
+		{InScale, -InScale, 0.0f},
+		{InScale, InScale, 0.0f}, 
+		{-InScale, InScale, 0.0f}
+	};
+	Scale = InScale;
 	Quad->CreateMeshSection_LinearColor(
 		0,
 		Vertices,
@@ -79,6 +85,4 @@ void AQuad::CreateQuad() const
 		Tangent,
 		true
 	);
-
-	
 }

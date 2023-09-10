@@ -19,9 +19,8 @@ public:
 	//End AActor interface
 	void SetActiveQuad(bool Active);
 	float GetScale() const {return Scale;};
+	void CreateQuad(float InScale);
 protected:
-	UPROPERTY(EditAnywhere)
-	float Scale {100.f};
 	
 	virtual void BeginPlay() override;
 	UPROPERTY(EditAnywhere)
@@ -40,14 +39,7 @@ protected:
 			{1.0f,  1.0f, 1.0f},
 			{1.0f,  1.0f, 0.0f}
 	};
-	UPROPERTY(EditAnywhere)
-	TArray<FVector> Vertices =
-	{
-		{-Scale, -Scale, 0.0f},
-		{Scale, -Scale, 0.0f},
-		{Scale, Scale, 0.0f}, 
-		{-Scale, Scale, 0.0f}
-	};
+	
 	UPROPERTY(EditAnywhere)
 	TArray<int> Indices =
 	{
@@ -77,9 +69,9 @@ protected:
 			{0.75, 0.75, 0.75, 1.0}
 	};
 private:
-	
-	
-	void CreateQuad() const;
+	UPROPERTY()
+	float Scale;
+
 	UPROPERTY()
 	TObjectPtr<UProceduralMeshComponent> Quad;
 };

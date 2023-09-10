@@ -17,12 +17,10 @@ AQuadTree::AQuadTree()
 
 void AQuadTree::Destroyed()
 {
-	// if (RootNode != nullptr)
-	// {
-	// 	RootNode->Value->Destroy();
-	// 	for (auto Node : RootNode->Nodes)
-	// 		Node->Value->Destroy();
-	// }
+	if (QuadRootNode != nullptr)
+	{
+		DestroyTree(QuadRootNode);
+	}
 	Super::Destroyed();
 }
 
@@ -77,7 +75,7 @@ void AQuadTree::Tick(float DeltaSeconds)
 void AQuadTree::PostLoad()
 {
 	Super::PostLoad();
-	BuildQuadTree();
+	//BuildQuadTree();
 }
 
 void AQuadTree::PostActorCreated()
@@ -86,7 +84,8 @@ void AQuadTree::PostActorCreated()
 	if (!HasAllFlags(RF_Transient))
 	{
 		//CameraPosition = GetWorld()->GetFirstPlayerController()->K2_GetActorLocation();
-		BuildQuadTree();
+		QuadRootNode = MakeShared<FQuadTreeNode>();
+		BuildQuadTree(QuadRootNode, this->GetActorLocation(),5, 10000);
 	}
 }
 
@@ -95,41 +94,65 @@ void AQuadTree::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AQuadTree::BuildQuadTree()
+void AQuadTree::BuildQuadTree(TSharedPtr<FQuadTreeNode> InNode, FVector InLocation, int LodLevel, float Scale)
 {
-	QuadRootNode = MakeShared<FQuadTreeNode>();
 	UClass* QuadClass {AQuad::StaticClass()};
-	float RootScale {100.0f};
 	const auto& ForwardVec {RootComponent->GetForwardVector()};
 	const auto& RightVec {RootComponent->GetRightVector()};
-
+	float MaxDist {std::numeric_limits<float>::max()};
+	int ClosestIndex {-1};
+	FVector CurrCameraPosition;
+	FRotator CurrCameraRotator;
+	GEditor->GetEditorSubsystem<UUnrealEditorSubsystem>()->GetLevelViewportCameraInfo(CurrCameraPosition, CurrCameraRotator);
+	
 	for (int i = 0; i < 4; i++)
 	{
 		auto NewQuad {MakeShared<FQuadTreeNode>()};
 		FVector Offset;
 		switch (i)
 		{
-		case 0:
-			//TopLeft
-			Offset = (ForwardVec + -RightVec) * RootScale;
+		case TopLeft:
+			Offset = (ForwardVec + -RightVec) * Scale;
 			break;
-		case 1:
-			//TopRight
-			Offset = (ForwardVec + RightVec) * RootScale;
+		case TopRight:
+			Offset = (ForwardVec + RightVec) * Scale;
 			break;
-		case 2:
-			//BottomLeft
-			Offset = (-ForwardVec + -RightVec) * RootScale;
+		case BottomLeft:
+			Offset = (-ForwardVec + -RightVec) * Scale;
 			break;
-		case 3:
-			//BottomRight
-			Offset = (-ForwardVec + RightVec) * RootScale;
+		case BottomRight:
+			Offset = (-ForwardVec + RightVec) * Scale;
 			break;
 		default:
 			break;
 		}
 
-		NewQuad->Value = GetWorld()->SpawnActor<AQuad>(QuadClass, this->GetActorLocation() + Offset, this->GetActorRotation(), FActorSpawnParameters());
-		QuadRootNode->Nodes.Push(NewQuad);	
+		NewQuad->Value = GetWorld()->SpawnActor<AQuad>(QuadClass, InLocation + Offset, this->GetActorRotation(), FActorSpawnParameters());
+		double Distance {FVector::Distance(InLocation + Offset, CameraPosition)};
+		if (Distance < MaxDist)
+		{
+			MaxDist = Distance;
+			ClosestIndex = i;
+		}
+		InNode->Nodes.Push(NewQuad);
+		NewQuad->Value->CreateQuad(Scale);
+	}
+	if (LodLevel != 0)
+	{
+		BuildQuadTree(InNode->Nodes[ClosestIndex],InNode->Nodes[ClosestIndex]->Value->GetActorLocation(), --LodLevel, Scale/2);
+		InNode->Nodes[ClosestIndex]->Value->Destroy();
+	}
+}
+
+void AQuadTree::DestroyTree(TSharedPtr<FQuadTreeNode> InNode)
+{
+	if (!InNode->Nodes.IsEmpty())
+	{
+		for (auto& Node : InNode->Nodes)
+		{
+			DestroyTree(Node);
+			Node->Value->Destroy();
+			Node.Reset();
+		}
 	}
 }

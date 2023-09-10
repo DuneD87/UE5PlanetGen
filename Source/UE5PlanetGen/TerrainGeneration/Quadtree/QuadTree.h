@@ -29,15 +29,24 @@ protected:
 	virtual void BeginPlay() override;
 private:
 	
-	enum QuadNames
+	enum Quadrants
 	{
-		Top = 0,
-		Left = 1,
-		Right = 2,
-		Bottom = 3
+		TopLeft = 0,
+		TopRight = 1,
+		BottomLeft = 2,
+		BottomRight = 3
+	};
+	TMap<int, float> LODLevels
+	{
+		{1, 10000},
+		{2, 5000},
+		{3, 2500},
+		{4, 1250},
+		{5, 625}
 	};
 	FVector CameraPosition;
-	void BuildQuadTree();
+	void BuildQuadTree(TSharedPtr<FQuadTreeNode> InNode, FVector InLocation, int LodLevel, float Scale);
+	void DestroyTree(TSharedPtr<FQuadTreeNode> InNode);
 	TSharedPtr<FQuadTreeNode> QuadRootNode;
 
 };

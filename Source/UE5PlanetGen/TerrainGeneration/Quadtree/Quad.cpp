@@ -35,6 +35,13 @@ void AQuad::PostActorCreated()
 	Super::PostActorCreated();
 	UE_LOG(LogTemp, Warning, TEXT("Quad Created"));
 }
+bool AQuad::IsPointInBounds(const FVector& PointLocation) const
+{
+	auto Max {Quad->Bounds.GetBox().Min};
+	auto Min {Quad->Bounds.GetBox().Max};
+	//UE_LOG(LogTemp, Warning, TEXT("\nQUAD NAME:%s\n\tBounds\n\tXMin: %f \n\tXMax: %f\n\t\n\tYMin: %f \n\tYMax: %f\n\tPointLocation: %f, %f, %f"),*this->GetName() ,Min.X, Max.X, Min.Y, Max.Y, PointLocation.X, PointLocation.Y, PointLocation.Z);
+	return Quad->Bounds.GetBox().IsInsideXY(PointLocation);
+}
 
 void AQuad::SetActiveQuad(bool Active)
 {

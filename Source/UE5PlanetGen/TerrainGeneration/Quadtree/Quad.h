@@ -17,6 +17,8 @@ public:
 	virtual void PostActorCreated() override;
 	virtual bool ShouldTickIfViewportsOnly() const override {return true;};
 	//End AActor interface
+	bool IsPointInBounds(const FVector& PointLocation) const;
+	FVector GetQuadLocation() const {return Quad->GetComponentLocation();};
 	void SetActiveQuad(bool Active);
 	float GetScale() const {return Scale;};
 	void CreateQuad(float InScale);

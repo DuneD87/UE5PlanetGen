@@ -15,7 +15,8 @@ class AQuadTree : public AActor
 	GENERATED_BODY()
 public:
 	AQuadTree();
-
+	UFUNCTION()
+	void OnTimerEvent();
 	//AActor interface implementation
 	virtual void Destroyed() override;
 	virtual void PostLoad() override;
@@ -28,7 +29,13 @@ public:
 protected:
 	virtual void BeginPlay() override;
 private:
-	
+	void TraverseTree(TSharedPtr<FQuadTreeNode>& InNode, int LodLevel, float Scale);
+	void BuildQuadTree(TSharedPtr<FQuadTreeNode>& InNode, const FVector& InLocation, float Scale);
+	void RemoveQuadTree(TSharedPtr<FQuadTreeNode>& InNode, float Scale);
+	void DestroyTree(TSharedPtr<FQuadTreeNode>& InNode);
+	//std::vector<float> LOD_LEVELS { 10.0f, 100.0f, 250.0f,500.0f,1000.0f,2500.0f,5000.0f,10000.0f };
+
+	std::vector<float> LOD_LEVELS { 100000.0f,50000.0f, 25000.0f, 10000.0f, 5000.0f, 2500.0f, 1000.0f, 100.0f };
 	enum Quadrants
 	{
 		TopLeft = 0,
@@ -36,17 +43,8 @@ private:
 		BottomLeft = 2,
 		BottomRight = 3
 	};
-	TMap<int, float> LODLevels
-	{
-		{1, 10000},
-		{2, 5000},
-		{3, 2500},
-		{4, 1250},
-		{5, 625}
-	};
+	FTimerHandle FuzeTimerHandle;
 	FVector CameraPosition;
-	void BuildQuadTree(TSharedPtr<FQuadTreeNode> InNode, FVector InLocation, int LodLevel, float Scale);
-	void DestroyTree(TSharedPtr<FQuadTreeNode> InNode);
 	TSharedPtr<FQuadTreeNode> QuadRootNode;
-
+	TSharedPtr<FQuadTreeNode> ClosestQuad;
 };

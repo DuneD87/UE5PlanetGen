@@ -4,7 +4,8 @@
 #include "Editor.h"
 #include "Subsystems/UnrealEditorSubsystem.h"
 
-
+const float MAX_LOD {32.0f};
+const float QUADTREE_BOUNDS {10000.0f};
 
 AQuadTree::AQuadTree()
 {
@@ -12,6 +13,13 @@ AQuadTree::AQuadTree()
 	RootComponent->bComputeBoundsOnceForGame = true;
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
+
+}
+
+void AQuadTree::OnTimerEvent()
+{
+	UE_LOG(LogTemp, Warning, TEXT("THIS WORKS!"));
+	//RemoveQuadTree(QuadRootNode->Nodes[2]->Nodes[1]->Nodes[3]);
 
 }
 
@@ -44,48 +52,24 @@ void AQuadTree::Tick(float DeltaSeconds)
 	if (CurrCameraPosition != CameraPosition)
 	{
 		CameraPosition = CurrCameraPosition;
-		int MaxDistIndex {};
-		float MaxDist {std::numeric_limits<float>::max()};
-		for (int i = 0; i < QuadRootNode->Nodes.Num(); i++)
-		{
-			const auto& ChildPos {QuadRootNode->Nodes[i]->Value->GetActorLocation()};
-			double Distance {FVector::Distance(ChildPos, CameraPosition)};
-			if (Distance < MaxDist)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Distance from child %d is %f"),i, Distance);
-				MaxDist = Distance;
-				MaxDistIndex = i;
-			}
-		}
-		for (int i = 0; i < QuadRootNode->Nodes.Num(); i++)
-		{
-			if (i == MaxDistIndex)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Setting child active: %d"), MaxDistIndex);
-				QuadRootNode->Nodes[MaxDistIndex]->Value->SetActiveQuad(true);
-			}
-			else
-			{
-				QuadRootNode->Nodes[i]->Value->SetActiveQuad(false);
-			}
-		}
+		TraverseTree(QuadRootNode, 0, QUADTREE_BOUNDS);
 	}
 }
 
 void AQuadTree::PostLoad()
 {
 	Super::PostLoad();
-	//BuildQuadTree();
 }
 
 void AQuadTree::PostActorCreated()
 {
 	Super::PostActorCreated();
+	//GetWorld()->GetTimerManager().SetTimer(FuzeTimerHandle, this, &AQuadTree::OnTimerEvent, 15, false);
 	if (!HasAllFlags(RF_Transient))
 	{
-		//CameraPosition = GetWorld()->GetFirstPlayerController()->K2_GetActorLocation();
 		QuadRootNode = MakeShared<FQuadTreeNode>();
-		BuildQuadTree(QuadRootNode, this->GetActorLocation(),5, 10000);
+
+		BuildQuadTree(QuadRootNode, this->GetActorLocation(), QUADTREE_BOUNDS);
 	}
 }
 
@@ -94,17 +78,38 @@ void AQuadTree::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AQuadTree::BuildQuadTree(TSharedPtr<FQuadTreeNode> InNode, FVector InLocation, int LodLevel, float Scale)
+void AQuadTree::TraverseTree(TSharedPtr<FQuadTreeNode>& InNode, int LodLevel, float Scale)
 {
-	UClass* QuadClass {AQuad::StaticClass()};
+	if (InNode->Nodes.Num() !=  0)
+	{
+		Algo::Sort(InNode->Nodes, [this](const TSharedPtr<FQuadTreeNode>& ValueA, const TSharedPtr<FQuadTreeNode>& ValueB )
+			{return FVector::Distance(CameraPosition, ValueA->Value->GetActorLocation()) < FVector::Distance(CameraPosition, ValueB->Value->GetActorLocation());});
+		for (auto& Node: InNode->Nodes)
+		{
+			if (LodLevel < MAX_LOD)
+			{
+				double DistanceToCamera {FVector::Distance(CameraPosition, Node->Value->GetQuadLocation())};
+				UE_LOG(LogTemp, Warning, TEXT("QUAD: %s -- Distance to camera: %f --- LODLEVEL: %d"),*Node->Value->GetActorLabel(), DistanceToCamera, LodLevel);
+				if (Node->Nodes.Num() == 0 && (DistanceToCamera <= (Scale*10)/LodLevel + 1))
+				{
+					BuildQuadTree(Node, Node->Value->GetQuadLocation(), Scale/2);
+				}
+				else if (Node->Nodes.Num() != 0 && (DistanceToCamera > (Scale*10)/LodLevel))
+				{
+					RemoveQuadTree(Node, Scale);
+				}
+
+				TraverseTree(Node, ++LodLevel, Scale/2);
+			}
+		}
+	}
+}
+
+void AQuadTree::BuildQuadTree(TSharedPtr<FQuadTreeNode>& InNode, const FVector& InLocation, float Scale)
+{
 	const auto& ForwardVec {RootComponent->GetForwardVector()};
 	const auto& RightVec {RootComponent->GetRightVector()};
-	float MaxDist {std::numeric_limits<float>::max()};
-	int ClosestIndex {-1};
-	FVector CurrCameraPosition;
-	FRotator CurrCameraRotator;
-	GEditor->GetEditorSubsystem<UUnrealEditorSubsystem>()->GetLevelViewportCameraInfo(CurrCameraPosition, CurrCameraRotator);
-	
+	FColor DebugColor;
 	for (int i = 0; i < 4; i++)
 	{
 		auto NewQuad {MakeShared<FQuadTreeNode>()};
@@ -113,39 +118,62 @@ void AQuadTree::BuildQuadTree(TSharedPtr<FQuadTreeNode> InNode, FVector InLocati
 		{
 		case TopLeft:
 			Offset = (ForwardVec + -RightVec) * Scale;
+			DebugColor = FColor::Blue;
 			break;
 		case TopRight:
 			Offset = (ForwardVec + RightVec) * Scale;
+			DebugColor = FColor::Green;
 			break;
 		case BottomLeft:
 			Offset = (-ForwardVec + -RightVec) * Scale;
+			DebugColor = FColor::Yellow;
 			break;
 		case BottomRight:
 			Offset = (-ForwardVec + RightVec) * Scale;
+			DebugColor = FColor::Red;
 			break;
 		default:
 			break;
 		}
-
-		NewQuad->Value = GetWorld()->SpawnActor<AQuad>(QuadClass, InLocation + Offset, this->GetActorRotation(), FActorSpawnParameters());
-		double Distance {FVector::Distance(InLocation + Offset, CameraPosition)};
-		if (Distance < MaxDist)
-		{
-			MaxDist = Distance;
-			ClosestIndex = i;
-		}
-		InNode->Nodes.Push(NewQuad);
+		auto NewLabel {FString::Printf(TEXT("Quad - %f - %d"), Scale, i)};
+		NewQuad->Value = GetWorld()->SpawnActor<AQuad>(AQuad::StaticClass(), InLocation + Offset, this->GetActorRotation(), FActorSpawnParameters());
+		//DrawDebugPoint(GetWorld(),InLocation + Offset, 100, DebugColor);
+		NewQuad->Value->SetActorLabel(NewLabel);
 		NewQuad->Value->CreateQuad(Scale);
+		InNode->Nodes.Push(NewQuad);
 	}
-	if (LodLevel != 0)
+	if (InNode->Value != nullptr)
 	{
-		BuildQuadTree(InNode->Nodes[ClosestIndex],InNode->Nodes[ClosestIndex]->Value->GetActorLocation(), --LodLevel, Scale/2);
-		InNode->Nodes[ClosestIndex]->Value->Destroy();
+		InNode->Value->Destroy();
 	}
 }
 
-void AQuadTree::DestroyTree(TSharedPtr<FQuadTreeNode> InNode)
+void AQuadTree::RemoveQuadTree(TSharedPtr<FQuadTreeNode>& InNode, float Scale)
 {
+	if (InNode->Nodes.Num() != 0)
+	{
+		FVector CenterPoint {0};
+		for (auto& Node : InNode->Nodes)
+		{
+			CenterPoint.X += Node->Value->GetActorLocation().X;
+			CenterPoint.Y += Node->Value->GetActorLocation().Y;
+			CenterPoint.Z += Node->Value->GetActorLocation().Z;
+			if (Node->Nodes.Num() != 0)
+			{
+				RemoveQuadTree(Node, Scale);
+			}
+			Node->Value->Destroy();
+			Node.Reset();
+		}
+		InNode->Value = GetWorld()->SpawnActor<AQuad>(AQuad::StaticClass(), CenterPoint / 4, this->GetActorRotation(), FActorSpawnParameters());
+		InNode->Value->CreateQuad(Scale);
+		InNode->Nodes.Empty();
+	}
+}
+
+void AQuadTree::DestroyTree(TSharedPtr<FQuadTreeNode>& InNode)
+{
+	FlushPersistentDebugLines(GetWorld());
 	if (!InNode->Nodes.IsEmpty())
 	{
 		for (auto& Node : InNode->Nodes)

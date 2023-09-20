@@ -1,9 +1,12 @@
 ﻿#include "Quad.h"
 
+#include "UE5PlanetGen/TerrainGeneration/Util/FastNoiseLite.h"
+
 AQuad::AQuad()
 {
 	Quad = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Quad"));
 	RootComponent = Quad;
+	bListedInSceneOutliner=false;
 }
 
 void AQuad::PostLoad()
@@ -17,23 +20,9 @@ void AQuad::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-void AQuad::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
-{
-	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
-	UE_LOG(LogTemp, Warning, TEXT("Caca"));
-}
-
-void AQuad::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-	UE_LOG(LogTemp, Warning, TEXT("Caca2"));
-
-}
-
 void AQuad::PostActorCreated()
 {
 	Super::PostActorCreated();
-	UE_LOG(LogTemp, Warning, TEXT("Quad Created"));
 }
 bool AQuad::IsPointInBounds(const FVector& PointLocation) const
 {
@@ -72,24 +61,17 @@ void AQuad::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AQuad::CreateQuad(float InScale) 
+void AQuad::CreateQuad(float InScale,  const TArray<FVector>& Vertices, const TArray<FVector2d>& Uv, const TArray<FVector>& Normals, const TArray<int>& Indices, const TArray<FLinearColor>& VertexsColor)
 {
-	TArray<FVector> Vertices =
-	{
-		{-InScale, -InScale, 0.0f},
-		{InScale, -InScale, 0.0f},
-		{InScale, InScale, 0.0f}, 
-		{-InScale, InScale, 0.0f}
-	};
-	Scale = InScale;
 	Quad->CreateMeshSection_LinearColor(
 		0,
 		Vertices,
 		Indices,
 		Normals,
 		Uv,
-		VertexColors,
-		Tangent,
+		VertexsColor,
+TArray<FProcMeshTangent>(),
 		true
 	);
 }
+

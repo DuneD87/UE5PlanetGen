@@ -2,7 +2,7 @@
 #include "ProceduralMeshComponent.h"
 #include "CoreMinimal.h"
 #include "Quad.generated.h"
-
+class FastNoiseLite;
 UCLASS()
 class AQuad : public AActor
 {
@@ -12,8 +12,6 @@ public:
 	//AActor interface implementation
 	virtual void PostLoad() override;
 	virtual void BeginDestroy() override;
-	virtual void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
-	virtual void Tick(float DeltaSeconds) override;
 	virtual void PostActorCreated() override;
 	virtual bool ShouldTickIfViewportsOnly() const override {return true;};
 	//End AActor interface
@@ -21,41 +19,11 @@ public:
 	FVector GetQuadLocation() const {return Quad->GetComponentLocation();};
 	void SetActiveQuad(bool Active);
 	float GetScale() const {return Scale;};
-	void CreateQuad(float InScale);
+	void CreateQuad(float InScale, const TArray<FVector>& Vertices, const TArray<FVector2d>& Uv, const TArray<FVector>& Normals, const TArray<int>& Indices, const TArray<FLinearColor>& VertexsColor);
 protected:
 	
 	virtual void BeginPlay() override;
-	UPROPERTY(EditAnywhere)
-	TArray<FVector2D> Uv =
-	{
-		{0.0f, 0.0f},
-		{0.0f, 1.0f},
-		{1.0f, 0.0f},
-		{1.0f, 1.0f},
-	};
-	UPROPERTY(EditAnywhere)
-	TArray<FProcMeshTangent> Tangent
-	{
-			{1.0f,  1.0f, 0.0f},
-			{1.0f,  1.0f, 1.0f},
-			{1.0f,  1.0f, 1.0f},
-			{1.0f,  1.0f, 0.0f}
-	};
-	
-	UPROPERTY(EditAnywhere)
-	TArray<int> Indices =
-	{
-		0, 3, 2,
-		2, 1, 0, 
-	};
-	UPROPERTY(EditAnywhere)
-	TArray<FVector> Normals
-	{
-			{0.0f, 0.0f, 1.0f}, 
-			{0.0f, 0.0f, 1.0f},
-			{0.0f, 0.0f, 1.0f},
-			{0.0f, 0.0f, 1.0f}
-	};
+
 	UPROPERTY(EditAnywhere)
 	UMaterialInterface* MaterialInterface;
 	UPROPERTY()
@@ -75,5 +43,5 @@ private:
 	float Scale;
 
 	UPROPERTY()
-	TObjectPtr<UProceduralMeshComponent> Quad;
+	UProceduralMeshComponent* Quad;
 };

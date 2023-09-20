@@ -11,7 +11,11 @@ public class UE5PlanetGen : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "ProceduralMeshComponent", "UnrealEd" });
-
+		PublicIncludePaths.AddRange(
+			new string[] {
+				"./Util"
+			}
+		);
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 		
